@@ -22,14 +22,22 @@
     --ink:#F1EBDD; --muted:#B9C6C0; --line:#335050; --shadow:0 10px 30px rgba(0,0,0,.35); --teal:#1B2E2E; --teal-deep:#122424; color-scheme:dark; }
 :root[data-theme="light"]{ color-scheme:light; }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;font-family:"Nunito Sans",system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip}
+html{scroll-behavior:smooth;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Nunito Sans",system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip;max-width:100%}
 img{max-width:100%;display:block}
 a{color:var(--sage-deep)}
 h1,h2,h3{font-family:"Lora",Georgia,serif;line-height:1.15;color:var(--teal);margin:0}
 :root[data-theme="dark"] h1,:root[data-theme="dark"] h2,:root[data-theme="dark"] h3{color:#F3EDDE}
 :root[data-theme="dark"] .vision h2,:root[data-theme="dark"] .donate-card h3{color:#fff}
-.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px;min-width:0}
+/* rail clearance — the fixed side rail is 52px wide at the right edge and
+   used to sit ON TOP of the right-hand drive cards, covering their right
+   edge (poster edge, "Learn more →" arrows, ends of lines). On any screen
+   narrower than the full content width, main content is inset from the
+   right by more than the rail's width, so every card ends BEFORE the rail
+   starts and nothing on a card can hide underneath it. */
+@media(max-width:1260px){ main .wrap{padding-right:64px} }
+@media(max-width:560px){ main .wrap{padding-right:58px;padding-left:16px} }
 button,[role="button"],a.btn,input,summary{min-height:44px}
 :focus-visible{outline:3px solid var(--terra);outline-offset:2px;border-radius:6px}
 
@@ -103,7 +111,8 @@ nav.main a[aria-current="page"]{background:var(--teal);color:#F7F2E9}
 .sr-donate:hover{background:var(--terra-deep)}
 .sr-donate .sr-heart{font-size:1.05rem;line-height:1}
 .sr-donate .sr-text{writing-mode:vertical-rl;font-weight:900;font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;line-height:1}
-@media(max-width:560px){ .side-rail{top:57%} .sr-link{width:46px;min-height:46px} .sr-link svg{width:21px;height:21px} .sr-donate .sr-text{font-size:.76rem} }
+@media(max-width:1180px){ .sr-link{width:48px} }
+@media(max-width:560px){ .side-rail{top:57%} .sr-link{width:44px;min-height:46px} .sr-link svg{width:21px;height:21px} .sr-donate .sr-text{font-size:.76rem} }
 
 /* hero */
 .hero{padding:44px 0 10px;overflow:hidden}
@@ -133,10 +142,10 @@ nav.main a[aria-current="page"]{background:var(--teal);color:#F7F2E9}
 .bstat span{font-size:.82rem;font-weight:700;color:#CBD8D2}
 .causes-top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .causes-top .btn{flex:none}
-.drive .meta{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
-.drive .meta b{color:var(--teal);font-size:.92rem;min-width:0}
+.drive .meta{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--line);min-width:0;max-width:100%}
+.drive .meta b{color:var(--teal);font-size:.92rem;min-width:0;overflow-wrap:break-word}
 :root[data-theme="dark"] .drive .meta b{color:#F3EDDE}
-.drive .meta a{font-weight:900;text-decoration:none;color:var(--terra-deep);white-space:nowrap;font-size:.92rem}
+.drive .meta a{font-weight:900;text-decoration:none;color:var(--terra-deep);white-space:nowrap;font-size:.92rem;flex:none}
 .reach{background:var(--teal);border-radius:28px;padding:36px 28px;color:#EDE7D8;display:grid;gap:26px;position:relative;overflow:hidden}
 @media(min-width:900px){ .reach{grid-template-columns:1fr 1fr;padding:48px 44px;align-items:center} }
 .reach h2{color:#fff}
@@ -205,15 +214,26 @@ section{padding:76px 0}
 .story-card p:last-child{margin-bottom:0}
 
 /* drives — posters are NEVER cropped: no fixed frame height, the image
-   itself sets the height (width 100%, height auto), shown whole top to bottom */
-.drives{display:grid;gap:28px;margin-top:38px;grid-template-columns:minmax(0,1fr)}
-@media(min-width:700px){ .drives{grid-template-columns:repeat(2,minmax(0,1fr))} }
-@media(min-width:1020px){ .drives{grid-template-columns:repeat(3,minmax(0,1fr))} }
+   itself sets the height (width 100%, height auto), shown whole top to bottom.
+   Clipping fix (the real cause, found Nov 13): the card is a flex COLUMN, and
+   its children (.thumb holding a 1080px-wide poster, .body holding the text)
+   had no min-width:0 of their own — a flex item's automatic minimum size is
+   its content size, so the wide poster could force the card's inner layout
+   wider than the grid column, and the card's own overflow:hidden then sliced
+   the pill / title / description at the card border (right-hand cards worst,
+   because the fixed side rail also sat over their right edge). Every layer
+   is now width-capped: grid track, card, thumb, body, and text all carry
+   min-width:0 + max-width:100%, so the text is laid out at the card's true
+   width and wraps INSIDE it. The 2-column layout also starts later (760px)
+   with a smaller gap, so at tablet widths each card is genuinely wider. */
+.drives{display:grid;gap:24px;margin-top:38px;grid-template-columns:minmax(0,1fr);max-width:100%;min-width:0}
+@media(min-width:760px){ .drives{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(min-width:1181px){ .drives{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .drives.wide{grid-template-columns:minmax(0,1fr)}
-@media(min-width:820px){ .drives.wide{grid-template-columns:repeat(2,minmax(0,1fr))} }
-.drive{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);min-width:0}
-.drive .thumb{background:var(--cream-2);padding:12px;border-bottom:1px solid var(--line)}
-.drive .thumb img{width:100%;max-width:100%;height:auto;object-fit:contain;border-radius:10px;display:block}
+@media(min-width:860px){ .drives.wide{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.drive{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);min-width:0;max-width:100%;width:100%}
+.drive .thumb{background:var(--cream-2);padding:12px;border-bottom:1px solid var(--line);min-width:0;max-width:100%;overflow:hidden}
+.drive .thumb img{width:100%;max-width:100%;min-width:0;height:auto;object-fit:contain;border-radius:10px;display:block}
 /* Gift a Tree poster (home card) — its closing caption sits right on the
    artwork's own bottom edge, so the poster is inset inside a matte matched
    to the poster's cream background: clear breathing room on every side,
@@ -221,19 +241,21 @@ section{padding:76px 0}
    beneath the poster so every letter is fully legible */
 .drive .thumb.tree-thumb{background:#FAF4E8;padding:24px 24px 20px}
 .drive .thumb.tree-thumb img{border-radius:6px;box-shadow:0 0 0 1px rgba(47,74,74,.12),0 8px 20px rgba(47,74,74,.12)}
-.poster-caption{margin:15px 2px 1px;text-align:center;font-weight:800;font-size:.93rem;line-height:1.5;color:#263B3B}
+.poster-caption{margin:15px 2px 1px;text-align:center;font-weight:800;font-size:.93rem;line-height:1.5;color:#263B3B;min-width:0;max-width:100%;overflow-wrap:break-word}
 @media(max-width:560px){ .drive .thumb.tree-thumb{padding:18px 18px 15px} }
-.drive .body{padding:24px;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
-.drive h3,.drive p{overflow-wrap:break-word}
-@media(max-width:560px){ .drive .body{padding:20px} }
+.drive .body{padding:22px;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;max-width:100%}
+.drive .body>*{min-width:0;max-width:100%}
+.drive h3,.drive p{overflow-wrap:break-word;word-break:normal}
+.drive .tag{max-width:100%;white-space:normal;overflow-wrap:break-word}
+@media(max-width:560px){ .drive .body{padding:18px} }
 .tag{align-self:flex-start;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:var(--blue-soft);color:#3E6373}
 :root[data-theme="dark"] .tag{color:#BFE0EE}
 .tag.sage{background:var(--sage-soft);color:var(--sage-deep)}
 :root[data-theme="dark"] .tag.sage{color:#BFE0CC}
 .tag.terra{background:#F9E3D3;color:var(--terra-deep)}
 :root[data-theme="dark"] .tag.terra{background:#4A2E1E;color:#FFD9C2}
-.drive h3{font-size:1.3rem}
-.drive p{color:var(--muted);margin:0;font-size:.97rem}
+.drive h3{font-size:1.22rem;line-height:1.3}
+.drive p{color:var(--muted);margin:0;font-size:.96rem}
 .drive .nums{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .drive .nums span{background:var(--cream-2);border-radius:10px;padding:6px 10px;font-weight:800;font-size:.85rem;color:var(--teal)}
 :root[data-theme="dark"] .drive .nums span{color:#F3EDDE}
