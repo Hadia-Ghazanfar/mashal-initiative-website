@@ -1,0 +1,21 @@
+name: Move uploaded site file to index.html
+on:
+  push:
+    paths:
+      - '.github/workflows/move-to-index.yml'
+permissions:
+  contents: write
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename uploaded file to index.html and commit
+        run: |
+          mv mash-al-initiative-website.html index.html
+          rm .github/workflows/move-to-index.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.com"
+          git add -A
+          git commit -m "Update website: posters, spacing, videos, team, blog, story, footer pages"
+          git push
